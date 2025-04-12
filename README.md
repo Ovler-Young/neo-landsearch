@@ -47,6 +47,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 pnpm dev
 ```
 
+You can set `NEXT_PUBLIC_API_URL` to your own API URL in `.env.local` or any other place you like.
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
 ## License
 
 MIT.

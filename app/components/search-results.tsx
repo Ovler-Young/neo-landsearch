@@ -21,7 +21,9 @@ import { Sort } from "./search-box";
 import { CalendarDays, PenIcon } from "lucide-react";
 
 async function getSearchResults(query: string, page: number, sort: Sort) {
-  const baseUrl = "https://search-api.saveweb.org/api/search";
+  const apiBackend = process.env.NEXT_PUBLIC_API_BACKEND || "https://search-api.saveweb.org";
+  const baseUrl = `${apiBackend}/api/search`;
+  
   const url = new URL(baseUrl);
   const params = new URLSearchParams({
     q: query.trim(),
