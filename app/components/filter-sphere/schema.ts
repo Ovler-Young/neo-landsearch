@@ -3,15 +3,18 @@ import { z } from "zod";
 import { zhCN } from "@fn-sphere/filter/locales";
 
 export const filterSchema = z.object({
-  title: z.string().describe("文章标题"),
-  author: z.array(z.string()).describe("文章作者"),
-  tags: z.array(z.string()).describe("文章标签"),
-  content: z.string().describe("文章内容"),
-  date: z.date().describe("发布时间"),
-  link: z.string().describe("文章链接"),
-  content_length: z.number().describe("文章字数"),
-  id: z.string().describe("ID"),
-  id_feed: z.number().describe("Feed ID"),
+  type: z.union([z.literal("thread"), z.literal("reply")]).describe("帖子类型"),
+  name: z.string().describe("名字"),
+  title: z.string().describe("回复标题"),
+  content: z.string().describe("回复内容"),
+
+  userid: z.string().describe("饼干"),
+  id: z.number().describe("回复ID"),
+  now: z.date().describe("发帖时间"),
+  parent: z.number().describe("串ID"),
+  fid: z.number().describe("版块ID"),
+  img: z.string().describe("图片文件名"),
+  ext: z.string().describe("文件扩展名"),
 });
 
 const notStartsWithFilter = defineTypedFn({
@@ -43,6 +46,19 @@ const locale: Record<string, string> = {
   ...zhCN,
   startsWith: "以...开始",
   notStartsWith: "不以...开始",
+  id: "帖子ID",
+  fid: "版块ID",
+  name: "名称",
+  title: "帖子标题",
+  content: "帖子内容",
+  img: "图片文件名",
+  ext: "文件扩展名",
+  now: "发帖时间",
+  type: "帖子类型",
+  userid: "饼干",
+  parent: "串ID",
+  thread: "串首",
+  reply: "回复",
 };
 
 export const getLocaleText = (key: string): string => {
