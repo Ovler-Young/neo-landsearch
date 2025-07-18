@@ -1,6 +1,7 @@
 import { defineTypedFn, FnSchema, presetFilter } from "@fn-sphere/filter";
 import { z } from "zod";
 import { zhCN } from "@fn-sphere/filter/locales";
+import { fidSchema, forumData } from "./forum-data";
 
 export const filterSchema = z.object({
   type: z.union([z.literal("thread"), z.literal("reply")]).describe("帖子类型"),
@@ -12,7 +13,7 @@ export const filterSchema = z.object({
   id: z.number().describe("回复ID"),
   now: z.date().describe("发帖时间"),
   parent: z.number().describe("串ID"),
-  fid: z.number().describe("版块ID"),
+  fid: fidSchema,
   img: z.string().describe("图片文件名"),
   ext: z.string().describe("文件扩展名"),
 });
@@ -46,6 +47,7 @@ const locale: Record<string, string> = {
   ...zhCN,
   startsWith: "以...开始",
   notStartsWith: "不以...开始",
+  ...Object.fromEntries(forumData.map((f) => [f.id, f.name])),
   id: "帖子ID",
   fid: "版块ID",
   name: "名称",
