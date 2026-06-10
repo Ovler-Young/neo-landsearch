@@ -10,10 +10,7 @@ const StatsDisplay = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const apiBackend = process.env.NEXT_PUBLIC_API_BACKEND || "https://search-api.saveweb.org";
-        const response = await fetch(
-          `${apiBackend}/api/stats`
-        );
+        const response = await fetch("/api/stats");
         const data = await response.json();
         setStats(data);
         setLoading(false);
