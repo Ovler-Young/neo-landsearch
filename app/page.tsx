@@ -37,14 +37,13 @@ export default function Home() {
         <br />
         nmbxd1.com 的第三方搜索 © 2025.
         <br />
-        Hosted on Vercel & Open sourced at{" "}
+        Hosted on Vercel. 第三方搜索，数据来源{" "}
         <a
           href="https://www.nmbxd1.com"
           className="text-primary"
         >
           nmbxd1.com
-        </a>{" "}
-        via MIT License.
+        </a>
       </div>
     </main>
   );
