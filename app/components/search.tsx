@@ -11,28 +11,41 @@ export default function Search() {
   const searchParams = useSearchParams();
 
   let initialQuery = decodeURIComponent(searchParams.get("q") || "");
-  const authorQuery = decodeURIComponent(searchParams.get("author") || "");
+  const nameQuery = decodeURIComponent(
+    searchParams.get("name") || searchParams.get("author") || ""
+  );
   let simple = !!(searchParams.get("simple") || "");
 
-  if (authorQuery) {
-    initialQuery += ` (author=${authorQuery})`;
+  if (nameQuery) {
+    initialQuery += ` (name="${nameQuery}")`;
   }
 
   let initSort = decodeURIComponent(searchParams.get("sort") || "relevance");
   if (!initSort) initSort = "relevance";
   let [sort, setSort] = useState<Sort>(initSort as Sort);
+  const [forumId, setForumId] = useState(searchParams.get("fid") || "all");
 
   const [query, setQuery] = useState(initialQuery);
 
+  const getSearchUrl = useCallback(
+    (value: string, nextSort = sort, nextForumId = forumId) => {
+      let h = `/search?q=${encodeURIComponent(value)}`;
+      if (nextSort !== "relevance") {
+        h += `&sort=${nextSort}`;
+      }
+      if (nextForumId !== "all") {
+        h += `&fid=${nextForumId}`;
+      }
+      return h;
+    },
+    [sort, forumId]
+  );
+
   const debouncedUpdateURL = useCallback(
     debounce((value: string) => {
-      let h = `/search?q=${encodeURIComponent(value)}`;
-      if (sort !== "relevance") {
-        h += `&sort=${sort}`;
-      }
-      router.push(h, { scroll: false });
+      router.push(getSearchUrl(value), { scroll: false });
     }, 300),
-    [sort]
+    [getSearchUrl]
   );
 
   function isAdvancedSearch(query: string) {
@@ -49,8 +62,7 @@ export default function Search() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.length) return
-    const encodedQuery = encodeURIComponent(query);
-    router.push(`/search?q=${encodedQuery}&sort=${sort}`, { scroll: false });
+    router.push(getSearchUrl(query), { scroll: false });
   };
 
   const handleInputChange = (s: string) => {
@@ -61,11 +73,12 @@ export default function Search() {
 
   useEffect(() => {
     if (query) {
-      router.push(`/search?q=${encodeURIComponent(query)}&sort=${sort}`, {
-        scroll: false,
-      });
+      router.push(getSearchUrl(query), { scroll: false });
     }
-  }, [sort]);
+  }, [sort, forumId]);
+
+  const searchQuery =
+    forumId === "all" ? query : `${query} (fid = ${forumId})`;
 
   return (
     <div>
@@ -78,15 +91,17 @@ export default function Search() {
         <SearchBox
           query={query}
           initAdvancedSearch={isAdvancedSearch(query)}
+          forumId={forumId}
           onChange={handleInputChange}
           onSortChange={setSort}
+          onForumChange={setForumId}
         />
       </form>
 
       {query && (
         <SearchResults
-          key={`${query}-${sort}`} // 添加 key 属性确保查询变化时重新渲染
-          initialQuery={query} // 改用 query 替代 initialQuery
+          key={`${searchQuery}-${sort}`}
+          initialQuery={searchQuery}
           initialPage={0}
           sort={sort}
         />

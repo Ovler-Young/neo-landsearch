@@ -14,7 +14,6 @@ export const filterSchema = z.object({
   now: z.date().describe("发帖时间"),
   parent: z.number().describe("串ID"),
   fid: fidSchema,
-  img: z.string().describe("图片文件名"),
   ext: z.string().describe("文件扩展名"),
 });
 
@@ -53,7 +52,6 @@ const locale: Record<string, string> = {
   name: "名称",
   title: "帖子标题",
   content: "帖子内容",
-  img: "图片文件名",
   ext: "文件扩展名",
   now: "发帖时间",
   type: "帖子类型",

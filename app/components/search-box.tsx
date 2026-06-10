@@ -17,20 +17,21 @@ import { Toggle } from "@/components/ui/toggle";
 import { Code } from "lucide-react";
 import ManualDialog from "./manual-dialog";
 import AdvancedFilterBuilder, { getCachedFilterRule } from "./filter-sphere";
+import { forumData } from "./filter-sphere/forum-data";
 
 export interface Props {
   query: string;
   initAdvancedSearch: boolean;
+  forumId: string;
   onChange: (s: string) => void;
   onSortChange: (sort: Sort) => void;
+  onForumChange: (forumId: string) => void;
 }
 
 export enum Sort {
   Relevance = "relevance",
-  DateDesc = "date:desc",
-  DateAsc = "date:asc",
-  IdDesc = "id:desc",
-  IdAsc = "id:asc",
+  DateDesc = "now:desc",
+  DateAsc = "now:asc",
 }
 
 export default function Search(props: Props) {
@@ -94,19 +95,30 @@ export default function Search(props: Props) {
                     marginInlineStart: "-3ch",
                   }}
                 >
-                  文章元数据
+                  发帖时间
                 </SelectLabel>
-                <SelectItem value="date:desc">最新发布</SelectItem>
-                <SelectItem value="date:asc">最早发布</SelectItem>
-                <SelectLabel
-                  style={{
-                    marginInlineStart: "-3ch",
-                  }}
-                >
-                  收录时间
-                </SelectLabel>
-                <SelectItem value="id:desc">最新收录</SelectItem>
-                <SelectItem value="id:asc">最早收录</SelectItem>
+                <SelectItem value="now:desc">最新发帖</SelectItem>
+                <SelectItem value="now:asc">最早发帖</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-row items-center ms-2">
+          <label className="mx-2" htmlFor="">
+            版块
+          </label>
+          <Select value={props.forumId} onValueChange={props.onForumChange}>
+            <SelectTrigger className="w-[120px] md:w-[160px]">
+              <SelectValue placeholder="全部版块" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">全部版块</SelectItem>
+                {forumData.map((forum) => (
+                  <SelectItem key={forum.id} value={forum.id}>
+                    {forum.name}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>

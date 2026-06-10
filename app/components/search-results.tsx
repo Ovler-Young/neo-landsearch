@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import LoadingAnimation from "./loading-animation";
@@ -21,10 +20,6 @@ import { Sort } from "./search-box";
 import { CalendarDays, PenIcon } from "lucide-react";
 
 async function getSearchResults(query: string, page: number, sort: Sort) {
-  const apiBackend = process.env.NEXT_PUBLIC_API_BACKEND || "https://search-api.saveweb.org";
-  const baseUrl = `${apiBackend}/api/search`;
-  
-  const url = new URL(baseUrl);
   const params = new URLSearchParams({
     q: query.trim(),
     f: "false",
@@ -34,7 +29,7 @@ async function getSearchResults(query: string, page: number, sort: Sort) {
   if (sort !== Sort.Relevance) {
     params.append("sort", sort);
   }
-  url.search = params.toString();
+  const url = `/api/search?${params.toString()}`;
   try {
     const res = await fetch(url, {
       method: "GET",
@@ -50,6 +45,17 @@ async function getSearchResults(query: string, page: number, sort: Sort) {
     console.error("Fetch error:", error);
     throw new Error("Failed to fetch data. Please try again later.");
   }
+}
+
+function getThreadUrl(hit: any) {
+  const replyId = hit.id;
+  const threadId = hit.parent && hit.parent !== 0 ? hit.parent : replyId;
+
+  return `https://www.nmbxd1.com/t/${threadId}?r=${replyId}`;
+}
+
+function getHitTimestamp(hit: any) {
+  return hit.now ?? hit.date;
 }
 
 export default function SearchResults({
@@ -173,61 +179,78 @@ export default function SearchResults({
           />
         </div>
       </div>
-      {results.map((hit: any) => (
-        <Card key={`${hit.id}-${hit.date}`} className="mb-4 overflow-hidden">
-          <CardHeader>
-            <CardTitle>
-              <Link
-                href={hit.link}
-                className="no-underline hover:underline leading-8	font-base font-bold"
+      {results.map((hit: any) => {
+        const hitUrl = getThreadUrl(hit);
+        const timestamp = getHitTimestamp(hit);
+
+        return (
+          <Card
+            key={`${hit.id}-${timestamp}`}
+            className="mb-4 overflow-hidden"
+          >
+            <CardHeader>
+              <CardTitle>
+                <Link
+                  href={hitUrl}
+                  className="no-underline hover:underline leading-8	font-base font-bold"
+                  dangerouslySetInnerHTML={{
+                    __html: (hit.title || `No.${hit.id}`).replace(
+                      /<span class="uglyHighlight text-purple-500">/g,
+                      '<span class="uglyHighlight">'
+                    ),
+                  }}
+                />
+              </CardTitle>
+              <section className="text-sm mt-1 break-all overflow-hidden flex flex-col sm:flex-row sm:justify-between">
+                <div className="flex-1 truncate font-mono mb-1 sm:mb-0">
+                  {decodeURI(hitUrl).replace(/ /g, "%20")}
+                </div>
+                <div className="flex items-center justify-end">
+                  {hit.name && (
+                    <div className="mr-2">
+                      <PenIcon
+                        className="inline-block m-1"
+                        size={14}
+                        aria-label="名称"
+                      />
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: hit.name
+                            .replace(/text-purple-500/g, "text-rose-500")
+                            .trim(),
+                        }}
+                      ></span>
+                    </div>
+                  )}
+                  {timestamp && (
+                    <div>
+                      <CalendarDays
+                        className="inline-block m-1"
+                        size={14}
+                        aria-label="日期"
+                      />
+                      <time dateTime={String(timestamp)} suppressHydrationWarning>
+                        {new Date(timestamp * 1000).toLocaleDateString()}
+                      </time>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </CardHeader>
+            <CardContent className={showContent ? "" : "hidden"}>
+              <CardDescription
                 dangerouslySetInnerHTML={{
-                  __html: hit.title.replace(
-                    /<span class="uglyHighlight text-purple-500">/g,
-                    '<span class="uglyHighlight">'
-                  ),
+                  __html: hit.content /* .replace(/</g, "&lt;") */
+                    .replace(
+                      /<span class="uglyHighlight text-purple-500">/g,
+                      '<span class="uglyHighlight">'
+                    ),
                 }}
               />
-            </CardTitle>
-            <section className="text-sm mt-1 break-all overflow-hidden flex flex-col sm:flex-row sm:justify-between">
-              <div className="flex-1 truncate font-mono mb-1 sm:mb-0">
-                {decodeURI(hit.link).replace(/ /g, "%20")}
-              </div>
-              <div className="flex items-center justify-end">
-                {hit.author && (
-                  <div className="mr-2">
-                    <PenIcon className="inline-block m-1" size={14} aria-label="作者" />
-                    <span
-                      dangerouslySetInnerHTML={{
-                        __html: hit.author
-                          .replace(/text-purple-500/g, "text-rose-500")
-                          .slice(1)
-                          .trim(),
-                      }}
-                    ></span>
-                  </div>
-                )}
-                <div>
-                  <CalendarDays className="inline-block m-1" size={14} aria-label="日期" />
-                  <time dateTime={hit.date} suppressHydrationWarning>
-                    {new Date(hit.date * 1000).toLocaleDateString()}
-                  </time>
-                </div>
-              </div>
-            </section>
-          </CardHeader>
-          <CardContent className={showContent ? "" : "hidden"}>
-            <CardDescription
-              dangerouslySetInnerHTML={{
-                __html: hit.content /* .replace(/</g, "&lt;") */
-                  .replace(
-                    /<span class="uglyHighlight text-purple-500">/g,
-                    '<span class="uglyHighlight">'
-                  ),
-              }}
-            />
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
       {loading && <LoadingAnimation />}
       {!noResults && <div ref={ref} className="h-10" />}
       {noResults && totalHits > 0 && (

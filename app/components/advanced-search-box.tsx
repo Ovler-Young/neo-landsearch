@@ -12,32 +12,32 @@ export interface Props {
 
 export default function AdvancedSearchInput(props: Props) {
   /*
-  title: str, 文章标题
-  id: int, 文章被抓取入库的实际时间，以微秒计 (1/1,000,000)，UTC 时间
-  id_feed: int, 文章所属的 feed ID
-  author: list[str], 文章作者（注意是列表）
-  tags: list[str], 文章标签（注意是列表）
-  date: int, feed 自行声明的文章发布时间，以秒计，UTC 时间（注意时间直接取自 feed，可能不准确）
-  content: str, 文章内容（markdown）
-  link: str, 文章链接
+  id: int, 回复 ID
+  fid: int, 版块 ID
+  ext: str, 文件扩展名
+  now: int, 发帖时间，以秒计
+  name: str, 名称
+  title: str, 帖子标题
+  content: str, 帖子内容
+  parent: int, 串 ID
+  type: str, 帖子类型
+  userid: str, 饼干
   */
   const TABLES = [
     "id",
-    "id_feed",
+    "fid",
+    "ext",
+    "now",
+    "name",
     "title",
-    "author",
-    "tags",
-    "date",
     "content",
-    "link",
+    "parent",
+    "type",
+    "userid",
   ].map((label) => ({ label }));
   const [value, setValue] = React.useState(
     props.value ??
-      `前端 (((id_feed=24 AND title STARTS WITH "科技爱好者周刊") OR 
-    (title STARTS WITH "产品周刊") OR
-    (link CONTAINS "blog.save-web.org" AND title CONTAINS "周报") OR 
-    (link CONTAINS "pseudoyu.com" AND title CONTAINS "周报")
-    ) AND id >= us(2025-1-1) AND id <= us(2025-1-11))`
+      `讨论串 (fid = 4 AND type = "thread" AND now >= sec(2025-1-1))`
   );
   const onChange = React.useCallback((val: string, viewUpdate: any) => {
     console.log("val:", val);
