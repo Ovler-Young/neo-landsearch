@@ -35,7 +35,7 @@ export default function Home() {
       <div className="text-center text-sm text-text mb-4">
         <StateDisplay />
         <br />
-        nmbxd1.com 的第三方搜索 © 2025.
+        nmbxd1.com 的第三方搜索 © 2026.
         <br />
         Hosted on Vercel. 第三方搜索，数据来源{" "}
         <a
