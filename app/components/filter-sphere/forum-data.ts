@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const forumData = [
+const rawForumData = [
   { id: "4", name: "综合版1" },
   { id: "98", name: "DANGER_U" },
   { id: "20", name: "欢乐恶搞" },
@@ -64,12 +64,38 @@ export const forumData = [
   { id: "60", name: "百脑汇" },
 ];
 
+function parseBlacklistedForumIds(value?: string) {
+  return new Set(
+    (value ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+  );
+}
+
+export const blacklistedForumIds = parseBlacklistedForumIds(
+  process.env.NEXT_PUBLIC_BLACKLIST_FIDS
+);
+
+export const forumData = rawForumData.filter(
+  (forum) => !blacklistedForumIds.has(forum.id)
+);
+
 export const forumIds = forumData.map((f) => f.id);
 
-const forumIdLiterals = forumIds.map((id) => z.literal(id)) as [
-  z.ZodLiteral<string>,
-  z.ZodLiteral<string>,
-  ...z.ZodLiteral<string>[],
-];
+const forumIdLiterals = forumIds.map((id) => z.literal(id));
 
-export const fidSchema = z.union(forumIdLiterals).describe("版块ID"); 
+export const fidSchema =
+  forumIdLiterals.length === 0
+    ? z.never().describe("版块ID")
+    : forumIdLiterals.length === 1
+      ? forumIdLiterals[0].describe("版块ID")
+      : z
+          .union(
+            forumIdLiterals as [
+              z.ZodLiteral<string>,
+              z.ZodLiteral<string>,
+              ...z.ZodLiteral<string>[],
+            ]
+          )
+          .describe("版块ID");

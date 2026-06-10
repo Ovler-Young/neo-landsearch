@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SearchResults from "./search-results";
 import debounce from "lodash.debounce";
 import SearchBox, { Sort } from "./search-box";
+import { forumIds } from "./filter-sphere/forum-data";
 
 export default function Search() {
   const router = useRouter();
@@ -23,7 +24,10 @@ export default function Search() {
   let initSort = decodeURIComponent(searchParams.get("sort") || "relevance");
   if (!initSort) initSort = "relevance";
   let [sort, setSort] = useState<Sort>(initSort as Sort);
-  const [forumId, setForumId] = useState(searchParams.get("fid") || "all");
+  const initialForumId = searchParams.get("fid") || "all";
+  const [forumId, setForumId] = useState(
+    forumIds.includes(initialForumId) ? initialForumId : "all"
+  );
 
   const [query, setQuery] = useState(initialQuery);
 
