@@ -28,6 +28,9 @@ const FILTER_OPERATORS: Record<string, string> = {
   isNotEmpty: "IS NOT EMPTY",
   before: "<",
   after: ">",
+  postTypeEquals: "=",
+  fileExtensionIsEmpty: "IS EMPTY",
+  fileExtensionIsNotEmpty: "IS NOT EMPTY",
 };
 
 const OPERATOR_FILTERS: Record<string, string> = {
@@ -155,6 +158,18 @@ function parseSingleQueryFilter(tokens: string[], index: number) {
           : "lessThan"
         : OPERATOR_FILTERS[operator];
   if (!name) return null;
+  if (path === "type" && name !== "equals") return null;
+  if (path === "ext" && name !== "isEmpty" && name !== "isNotEmpty") {
+    return null;
+  }
+  const builderName =
+    path === "type" && name === "equals"
+      ? "postTypeEquals"
+      : path === "ext" && name === "isEmpty"
+        ? "fileExtensionIsEmpty"
+        : path === "ext" && name === "isNotEmpty"
+          ? "fileExtensionIsNotEmpty"
+          : name;
 
   const nextIndex =
     operator.startsWith("IS ") &&
@@ -166,7 +181,7 @@ function parseSingleQueryFilter(tokens: string[], index: number) {
   return {
     rule: createSingleFilter({
       path: [path],
-      name,
+      name: builderName,
       args,
     }),
     index: nextIndex,

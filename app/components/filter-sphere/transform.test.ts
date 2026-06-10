@@ -189,6 +189,7 @@ describe("queryStringToFilterRule", () => {
     expect(filter).not.toBeNull();
     expect(filter?.op).toBe("and");
     expect(filter?.conditions).toHaveLength(2);
+    expect((filter?.conditions[0] as any).name).toBe("postTypeEquals");
     expect(filterRuleToQueryString(filter!)).toBe(
       '(type = "reply" AND userid = "RRbLdfa")'
     );
@@ -217,6 +218,27 @@ describe("queryStringToFilterRule", () => {
 
   it("should reject forum ids that are not available in the builder", () => {
     expect(queryStringToFilterRule("(fid = 999999)")).toBeNull();
+  });
+
+  it("should reject non-equals filters for post type", () => {
+    expect(queryStringToFilterRule('(type CONTAINS "reply")')).toBeNull();
+  });
+
+  it("should only parse empty state filters for file extension", () => {
+    const emptyFilter = queryStringToFilterRule("(ext IS EMPTY)");
+    const notEmptyFilter = queryStringToFilterRule("(ext IS NOT EMPTY)");
+
+    expect((emptyFilter?.conditions[0] as any).name).toBe(
+      "fileExtensionIsEmpty"
+    );
+    expect((notEmptyFilter?.conditions[0] as any).name).toBe(
+      "fileExtensionIsNotEmpty"
+    );
+    expect(filterRuleToQueryString(emptyFilter!)).toBe("(ext IS EMPTY)");
+    expect(filterRuleToQueryString(notEmptyFilter!)).toBe(
+      "(ext IS NOT EMPTY)"
+    );
+    expect(queryStringToFilterRule('(ext = ".jpg")')).toBeNull();
   });
 });
 

@@ -3,8 +3,15 @@ import { z } from "zod";
 import { zhCN } from "@fn-sphere/filter/locales";
 import { fidSchema, forumData } from "./forum-data";
 
+const postTypeSchema = z
+  .custom<"thread" | "reply">((value) => value === "thread" || value === "reply")
+  .describe("帖子类型");
+const fileExtensionStateSchema = z
+  .custom<string>((value) => typeof value === "string")
+  .describe("文件扩展名");
+
 export const filterSchema = z.object({
-  type: z.union([z.literal("thread"), z.literal("reply")]).describe("帖子类型"),
+  type: postTypeSchema,
   name: z.string().describe("名字"),
   title: z.string().describe("回复标题"),
   content: z.string().describe("回复内容"),
@@ -14,7 +21,28 @@ export const filterSchema = z.object({
   now: z.date().describe("发帖时间"),
   parent: z.number().describe("串ID"),
   fid: fidSchema,
-  ext: z.string().describe("文件扩展名"),
+  ext: fileExtensionStateSchema,
+});
+
+const postTypeEqualsFilter = defineTypedFn({
+  name: "postTypeEquals",
+  define: z.function().args(postTypeSchema, postTypeSchema).returns(z.boolean()),
+  // Just a placeholder since we don't need filter data at frontend.
+  implement: () => false,
+});
+
+const fileExtensionIsEmptyFilter = defineTypedFn({
+  name: "fileExtensionIsEmpty",
+  define: z.function().args(fileExtensionStateSchema).returns(z.boolean()),
+  // Just a placeholder since we don't need filter data at frontend.
+  implement: () => false,
+});
+
+const fileExtensionIsNotEmptyFilter = defineTypedFn({
+  name: "fileExtensionIsNotEmpty",
+  define: z.function().args(fileExtensionStateSchema).returns(z.boolean()),
+  // Just a placeholder since we don't need filter data at frontend.
+  implement: () => false,
 });
 
 const notStartsWithFilter = defineTypedFn({
@@ -34,6 +62,9 @@ const filterPriority = [
 export const filterFnList: FnSchema[] = [
   ...presetFilter.filter((fn) => fn.name !== "endsWith"),
   notStartsWithFilter,
+  postTypeEqualsFilter,
+  fileExtensionIsEmptyFilter,
+  fileExtensionIsNotEmptyFilter,
 ].sort((a, b) => {
   const indexA = filterPriority.indexOf(a.name);
   const indexB = filterPriority.indexOf(b.name);
@@ -46,6 +77,9 @@ const locale: Record<string, string> = {
   ...zhCN,
   startsWith: "以...开始",
   notStartsWith: "不以...开始",
+  postTypeEquals: "等于",
+  fileExtensionIsEmpty: "为空",
+  fileExtensionIsNotEmpty: "非空",
   ...Object.fromEntries(forumData.map((f) => [f.id, f.name])),
   id: "帖子ID",
   fid: "版块ID",
