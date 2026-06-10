@@ -45,7 +45,7 @@ Set `API_BACKEND` to your backend URL in `.env.local` or in Vercel. Browser clie
 API_BACKEND=http://localhost:3000
 ```
 
-Set `NEXT_PUBLIC_BLACKLIST_FIDS` to a comma-separated list of forum IDs to hide from forum filtering and query-builder choices.
+Set `NEXT_PUBLIC_BLACKLIST_FIDS` to a comma-separated list of forum IDs to hide from forum filtering and query-builder choices. Requests through the local search API also append a blacklist filter before forwarding to `API_BACKEND`, so blacklisted forum IDs are excluded from search results.
 
 ```bash
 NEXT_PUBLIC_BLACKLIST_FIDS=98,96

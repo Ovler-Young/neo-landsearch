@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  appendForumBlacklistQuery,
+  parseBlacklistedForumIds,
+} from "../../utils/forumBlacklist";
 
 function getApiBackend() {
   return process.env.API_BACKEND;
+}
+
+function getBlacklistedForumIds() {
+  return parseBlacklistedForumIds(process.env.NEXT_PUBLIC_BLACKLIST_FIDS);
 }
 
 export async function GET(request: NextRequest) {
@@ -15,7 +23,15 @@ export async function GET(request: NextRequest) {
   }
 
   const upstreamUrl = new URL("/api/search", apiBackend);
-  upstreamUrl.search = request.nextUrl.searchParams.toString();
+  const searchParams = new URLSearchParams(request.nextUrl.searchParams);
+  const query = searchParams.get("q");
+  if (query !== null) {
+    searchParams.set(
+      "q",
+      appendForumBlacklistQuery(query, getBlacklistedForumIds())
+    );
+  }
+  upstreamUrl.search = searchParams.toString();
 
   const response = await fetch(upstreamUrl, {
     headers: {

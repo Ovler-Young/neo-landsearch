@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseBlacklistedForumIds } from "../../utils/forumBlacklist";
 
 const rawForumData = [
   { id: "4", name: "综合版1" },
@@ -64,17 +65,8 @@ const rawForumData = [
   { id: "60", name: "百脑汇" },
 ];
 
-function parseBlacklistedForumIds(value?: string) {
-  return new Set(
-    (value ?? "")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean)
-  );
-}
-
-export const blacklistedForumIds = parseBlacklistedForumIds(
-  process.env.NEXT_PUBLIC_BLACKLIST_FIDS
+export const blacklistedForumIds = new Set(
+  parseBlacklistedForumIds(process.env.NEXT_PUBLIC_BLACKLIST_FIDS)
 );
 
 export const forumData = rawForumData.filter(
