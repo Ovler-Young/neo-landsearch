@@ -1,5 +1,11 @@
-import { FilterGroup, SingleFilter } from "@fn-sphere/filter";
+import {
+  createFilterGroup,
+  createSingleFilter,
+  FilterGroup,
+  SingleFilter,
+} from "@fn-sphere/filter";
 import { filterFnList } from "./schema";
+import { forumIds } from "./forum-data";
 import { z } from "zod";
 
 // Define operator mapping
@@ -23,6 +29,187 @@ const FILTER_OPERATORS: Record<string, string> = {
   before: "<",
   after: ">",
 };
+
+const OPERATOR_FILTERS: Record<string, string> = {
+  "=": "equals",
+  "!=": "notEquals",
+  ">=": "greaterThanOrEqual",
+  "<=": "lessThanOrEqual",
+  CONTAINS: "contains",
+  "NOT CONTAINS": "notContains",
+  "STARTS WITH": "startsWith",
+  "NOT STARTS WITH": "notStartsWith",
+  IN: "in",
+  "NOT IN": "notIn",
+  "IS NULL": "isNull",
+  "IS NOT NULL": "isNotNull",
+  "IS EMPTY": "isEmpty",
+  "IS NOT EMPTY": "isNotEmpty",
+};
+
+const QUERY_TOKEN =
+  /\s*(>=|<=|!=|=|>|<|\(|\)|"(?:(?:\\.)|[^"\\])*"|AND\b|OR\b|IS\s+NOT\s+NULL\b|IS\s+NULL\b|IS\s+NOT\s+EMPTY\b|IS\s+EMPTY\b|NOT\s+CONTAINS\b|CONTAINS\b|NOT\s+STARTS\s+WITH\b|STARTS\s+WITH\b|sec\(\d{4}-\d{1,2}-\d{1,2}\)|[A-Za-z_][A-Za-z0-9_]*|-?\d+(?:\.\d+)?)/gi;
+
+const FIELD_TYPES: Record<string, "string" | "number" | "date" | "literal"> = {
+  type: "literal",
+  name: "string",
+  title: "string",
+  content: "string",
+  userid: "string",
+  id: "number",
+  now: "date",
+  parent: "number",
+  fid: "literal",
+  ext: "string",
+};
+
+const parseQueryTokens = (query: string) => {
+  const tokens: string[] = [];
+  let index = 0;
+  QUERY_TOKEN.lastIndex = 0;
+
+  while (index < query.length) {
+    const match = QUERY_TOKEN.exec(query);
+    if (!match || match.index !== index) return null;
+    tokens.push(match[1]);
+    index = QUERY_TOKEN.lastIndex;
+  }
+
+  return tokens;
+};
+
+function parseQueryValue(token?: string): unknown {
+  if (token === undefined) return undefined;
+  if (token.startsWith('"') && token.endsWith('"')) {
+    return token.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  }
+
+  const dateMatch = token.match(/^sec\((\d{4})-(\d{1,2})-(\d{1,2})\)$/);
+  if (dateMatch) {
+    return new Date(
+      Number(dateMatch[1]),
+      Number(dateMatch[2]) - 1,
+      Number(dateMatch[3])
+    );
+  }
+
+  if (/^-?\d+(?:\.\d+)?$/.test(token)) {
+    return Number(token);
+  }
+
+  return token;
+}
+
+function normalizeQueryValue(path: string, value: unknown): unknown {
+  const fieldType = FIELD_TYPES[path];
+  if (!fieldType) return undefined;
+
+  if (fieldType === "number") {
+    if (typeof value === "number") return value;
+    if (typeof value === "string" && /^-?\d+(?:\.\d+)?$/.test(value)) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  if (fieldType === "date") {
+    return value instanceof Date ? value : undefined;
+  }
+
+  if (fieldType === "literal") {
+    if (path === "type" && (value === "thread" || value === "reply")) {
+      return value;
+    }
+    if (path === "fid" && forumIds.includes(String(value))) {
+      return String(value);
+    }
+    return undefined;
+  }
+
+  return typeof value === "string" ? value : undefined;
+}
+
+const normalizeOperator = (operator: string) =>
+  operator.replace(/\s+/g, " ").toUpperCase();
+
+function parseSingleQueryFilter(tokens: string[], index: number) {
+  const path = tokens[index];
+  const operatorToken = tokens[index + 1];
+  if (!path || !operatorToken) return null;
+  if (!(path in FIELD_TYPES)) return null;
+
+  const operator = normalizeOperator(operatorToken);
+  const rawValue = parseQueryValue(tokens[index + 2]);
+  const value = operator.startsWith("IS ")
+    ? undefined
+    : normalizeQueryValue(path, rawValue);
+  if (!operator.startsWith("IS ") && value === undefined) return null;
+  const name =
+    operator === ">"
+      ? value instanceof Date
+        ? "after"
+        : "greaterThan"
+      : operator === "<"
+        ? value instanceof Date
+          ? "before"
+          : "lessThan"
+        : OPERATOR_FILTERS[operator];
+  if (!name) return null;
+
+  const nextIndex =
+    operator.startsWith("IS ") &&
+    !["=", "!=", ">", ">=", "<", "<="].includes(operator)
+      ? index + 2
+      : index + 3;
+  const args = nextIndex === index + 2 ? [] : [value];
+
+  return {
+    rule: createSingleFilter({
+      path: [path],
+      name,
+      args,
+    }),
+    index: nextIndex,
+  };
+}
+
+function parseQueryGroup(tokens: string[], index = 0) {
+  if (tokens[index] !== "(") return null;
+  index += 1;
+
+  const conditions: FilterGroup["conditions"] = [];
+  let op: FilterGroup["op"] | undefined;
+
+  while (index < tokens.length) {
+    if (tokens[index] === ")") {
+      return {
+        rule: createFilterGroup({
+          op: op ?? "and",
+          conditions,
+        }),
+        index: index + 1,
+      };
+    }
+
+    const result =
+      tokens[index] === "("
+        ? parseQueryGroup(tokens, index)
+        : parseSingleQueryFilter(tokens, index);
+    if (!result) return null;
+
+    conditions.push(result.rule);
+    index = result.index;
+
+    if (tokens[index] === ")") continue;
+    const joiner = tokens[index]?.toLowerCase();
+    if (joiner !== "and" && joiner !== "or") return null;
+    if (op && op !== joiner) return null;
+    op = joiner;
+    index += 1;
+  }
+
+  return null;
+}
 
 /**
  * Checks if a filter is unary (takes 0 or 1 parameters)
@@ -121,6 +308,17 @@ function transformFilterGroup(filterGroup: FilterGroup): string | null {
 export const filterRuleToQueryString = (filterGroup: FilterGroup) => {
   return transformFilterGroup(filterGroup) ?? "";
 };
+
+export function queryStringToFilterRule(query: string): FilterGroup | null {
+  const tokens = parseQueryTokens(query.trim());
+  if (!tokens?.length) return null;
+
+  const result = parseQueryGroup(tokens);
+  if (!result || result.index !== tokens.length) return null;
+  if (!result.rule.conditions.length) return null;
+
+  return result.rule;
+}
 
 /**
  * Serializes a FilterGroup object to JSON string with special date handling

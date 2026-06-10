@@ -1,5 +1,9 @@
 import { FilterGroup } from "@fn-sphere/filter";
-import { deserializeFilterGroup, serializeFilterGroup } from "./transform";
+import {
+  deserializeFilterGroup,
+  queryStringToFilterRule,
+  serializeFilterGroup,
+} from "./transform";
 
 const STORAGE_KEY = "filter-rule-cache";
 
@@ -15,17 +19,17 @@ export const cacheFilterRule = (query: string, rule: FilterGroup) => {
 };
 
 export const getCachedFilterRule = (query: string) => {
-  if (!("localStorage" in globalThis)) return;
+  if (!("localStorage" in globalThis)) return queryStringToFilterRule(query);
 
   const str = localStorage.getItem(STORAGE_KEY);
-  if (!str) return null;
+  if (!str) return queryStringToFilterRule(query);
 
   try {
     const obj = JSON.parse(str);
-    if (obj.key !== query) return null;
+    if (obj.key !== query) return queryStringToFilterRule(query);
     return deserializeFilterGroup(obj.value);
   } catch (error) {
     console.error("Failed to parse cached filter rule!", str);
-    return null;
+    return queryStringToFilterRule(query);
   }
 };

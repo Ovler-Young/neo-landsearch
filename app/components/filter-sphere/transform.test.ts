@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   deserializeFilterGroup,
   filterRuleToQueryString,
+  queryStringToFilterRule,
   serializeFilterGroup,
 } from "./transform";
 import type { FilterGroup } from "@fn-sphere/filter";
@@ -176,6 +177,46 @@ describe("filterRuleToQueryString", () => {
       conditions: [],
     };
     expect(filterRuleToQueryString(filter)).toBe("");
+  });
+});
+
+describe("queryStringToFilterRule", () => {
+  it("should parse URL query filters back into a FilterGroup", () => {
+    const filter = queryStringToFilterRule(
+      '(type = "reply" AND userid = "RRbLdfa")'
+    );
+
+    expect(filter).not.toBeNull();
+    expect(filter?.op).toBe("and");
+    expect(filter?.conditions).toHaveLength(2);
+    expect(filterRuleToQueryString(filter!)).toBe(
+      '(type = "reply" AND userid = "RRbLdfa")'
+    );
+  });
+
+  it("should parse numeric and date filters", () => {
+    const filter = queryStringToFilterRule(
+      "(id = 123 AND now < sec(2024-1-1))"
+    );
+
+    expect(filter).not.toBeNull();
+    expect(filterRuleToQueryString(filter!)).toBe(
+      "(id = 123 AND now < sec(2024-1-1))"
+    );
+  });
+
+  it("should reject mixed operators at the same group level", () => {
+    expect(
+      queryStringToFilterRule('(type = "reply" AND userid = "x" OR id = 1)')
+    ).toBeNull();
+  });
+
+  it("should reject fields that are not exposed in the builder", () => {
+    expect(queryStringToFilterRule('(_id = "abc")')).toBeNull();
+  });
+
+  it("should reject forum ids that are not available in the builder", () => {
+    expect(queryStringToFilterRule("(fid = 999999)")).toBeNull();
   });
 });
 
