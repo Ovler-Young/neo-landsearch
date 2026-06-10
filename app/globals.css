@@ -48,7 +48,6 @@
 body {
   background-color: var(--bg);
   color: var(--text);
-  overflow-y: scroll;
 }
 
 @keyframes marquee {

@@ -5,9 +5,9 @@ import { ViewTransitions } from 'next-view-transitions';
 // import "@ibm/plex-sans-sc/css/ibm-plex-sans-sc-all.min.css";
 
 export const metadata: Metadata = {
-  title: "丑搜 v3",
-  description: "中文独立博客全文搜索引擎（收录 2k+ 博客）",
-  metadataBase: new URL('https://search.save-web.org'),
+  title: "Island Search",
+  description: "nmbxd1.com 的第三方搜索",
+  metadataBase: new URL('https://www.nmbxd1.com'),
   openGraph: {
     images: {
       url: "/preview.png",
